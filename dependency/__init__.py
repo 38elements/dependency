@@ -16,7 +16,26 @@ Step = typing.NamedTuple('Step', [
     ('output_type', typing.Type),
     ('is_context_manager', bool)
 ])
-Pipeline = typing.List[Step]
+
+
+class Pipeline():
+    def __init__(self, steps: typing.List[Step]):
+        self.steps = steps
+
+    def __call__(self):
+        ret = None
+        state = {}
+        with ExitStack() as stack:
+            for step in self.steps:
+                kwargs = {
+                    argname: state[state_key]
+                    for (argname, state_key) in step.input_keys.items()
+                }
+                ret = step.func(**kwargs)
+                if step.is_context_manager:
+                    stack.enter_context(ret)
+                state[step.output_key] = ret
+            return ret
 
 
 _providers = {}
@@ -74,10 +93,10 @@ def create_step(func: typing.Callable) -> Step:
     )
 
 
-def create_pipeline(func: typing.Callable) -> Pipeline:
+def create_steps(func: typing.Callable) -> typing.List[Step]:
     global _providers
 
-    pipeline = []
+    steps = []
     sig = inspect.signature(func)
 
     for param in sig.parameters.values():
@@ -85,30 +104,14 @@ def create_pipeline(func: typing.Callable) -> Pipeline:
         assert not isinstance(param.annotation, str)
         assert param.annotation in _providers
         provider_func = _providers[param.annotation]
-        param_pipeline = create_pipeline(provider_func)
-        pipeline.extend(param_pipeline)
+        param_steps = create_steps(provider_func)
+        steps.extend(param_steps)
 
     step = create_step(func)
-    pipeline.append(step)
-    return pipeline
+    steps.append(step)
+    return steps
 
 
-def run_pipeline(pipeline: Pipeline) -> typing.Any:
-    ret = None
-    state = {}
-    with ExitStack() as stack:
-        for step in pipeline:
-            kwargs = {
-                argname: state[state_key]
-                for (argname, state_key) in step.input_keys.items()
-            }
-            ret = step.func(**kwargs)
-            if step.is_context_manager:
-                stack.enter_context(ret)
-            state[step.output_key] = ret
-        return ret
-
-
-def inject(func: typing.Callable) -> typing.Callable:
-    pipeline = create_pipeline(func)
-    return functools.partial(run_pipeline, pipeline=pipeline)
+def inject(func: typing.Callable) -> Pipeline:
+    steps = create_steps(func)
+    return Pipeline(steps)
