@@ -19,12 +19,20 @@ Step = typing.NamedTuple('Step', [
 
 
 class Pipeline():
-    def __init__(self, steps: typing.List[Step]):
+    def __init__(self, steps: typing.List[Step], initial_state: typing.Dict[str, type]):
         self.steps = steps
+        self.kwarg_to_state_key = {
+            key: get_key(value)
+            for key, value in initial_state.items()
+        }
 
-    def __call__(self):
+    def __call__(self, **kwargs):
         ret = None
-        state = {}
+        state = {
+            self.kwarg_to_state_key[key]: value
+            for key, value in kwargs.items()
+        }
+
         with ExitStack() as stack:
             for step in self.steps:
                 kwargs = {
@@ -93,25 +101,34 @@ def create_step(func: typing.Callable) -> Step:
     )
 
 
-def create_steps(func: typing.Callable) -> typing.List[Step]:
-    global _providers
-
+def create_steps(func: typing.Callable, providers: typing.Dict[str, typing.Callable], seen_types: typing.Set[type]) -> typing.List[Step]:
+    seen_types = set(seen_types)
     steps = []
     sig = inspect.signature(func)
 
     for param in sig.parameters.values():
+        if param.annotation in seen_types:
+            continue
+
         assert param.annotation is not inspect.Signature.empty
         assert not isinstance(param.annotation, str)
         assert param.annotation in _providers
-        provider_func = _providers[param.annotation]
-        param_steps = create_steps(provider_func)
+
+        provider_func = providers[param.annotation]
+        param_steps = create_steps(provider_func, providers, seen_types)
         steps.extend(param_steps)
+        seen_types |= set([step.output_type for step in param_steps])
 
     step = create_step(func)
     steps.append(step)
     return steps
 
 
-def inject(func: typing.Callable) -> Pipeline:
-    steps = create_steps(func)
-    return Pipeline(steps)
+def inject(func: typing.Callable, initial_state: typing.Dict[str, type]=None) -> Pipeline:
+    global _providers
+
+    if initial_state is None:
+        initial_state = {}
+    seen_types = set(initial_state.values())
+    steps = create_steps(func, _providers, seen_types)
+    return Pipeline(steps, initial_state)
