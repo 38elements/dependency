@@ -1,58 +1,7 @@
 import dependency
 
 
-class User():
-    def __init__(self, username):
-        self.username = username
-
-
-def user_func(u: User):
-    return u
-
-
-def test_dependency():
-    @dependency.provider
-    def mock_user() -> User:
-        return User('example')
-
-    func = dependency.inject(user_func)
-    u = func()
-    assert isinstance(u, User)
-    assert u.username == 'example'
-
-
-
-events = []
-
-
-class DatabaseSession():
-    def __init__(self, config):
-        self.config = config
-
-    def __enter__(self):
-        global events
-        events.append('setup')
-
-    def __exit__(self, *args, **kwargs):
-        global events
-        events.append('teardown')
-
-
-def db_func(session: DatabaseSession):
-    pass
-
-
-def test_context_manager():
-    @dependency.provider
-    def mock_database() -> DatabaseSession:
-        return DatabaseSession({})
-
-    func = dependency.inject(db_func)
-    func()
-    assert events == ['setup', 'teardown']
-
-
-def test_pipelines():
+def test_injection():
     class Environ(dict):
         pass
 
@@ -62,11 +11,9 @@ def test_pipelines():
     class Headers(dict):
         pass
 
-    @dependency.provider
     def get_method(environ: Environ) -> Method:
         return Method(environ['METHOD'])
 
-    @dependency.provider
     def get_headers(environ: Environ) -> Headers:
         headers = {}
         for key, value in environ.items():
@@ -81,5 +28,67 @@ def test_pipelines():
     def echo_method_and_headers(method: Method, headers: Headers):
         return {'method': method, 'headers': headers}
 
-    func = dependency.inject(echo_method_and_headers, initial_state={'environ': Environ})
-    func(environ={'METHOD': 'GET', 'CONTENT_TYPE': 'application/json', 'HTTP_HOST': '127.0.0.1'})
+    injector = dependency.Injector(
+        providers={
+            Method: get_method,
+            Headers: get_headers
+        },
+        state={
+            'environ': Environ
+        }
+    )
+
+    func = injector.inject(echo_method_and_headers)
+    assert [
+        step.func for step in func.steps
+    ] == [
+        get_method,
+        get_headers,
+        echo_method_and_headers
+    ]
+
+    environ = {
+        'METHOD': 'GET',
+        'CONTENT_TYPE': 'application/json',
+        'HTTP_HOST': '127.0.0.1'
+    }
+    result = func(environ=environ)
+    assert result == {
+        'method': 'GET',
+        'headers': {'content-type': 'application/json', 'host': '127.0.0.1'}
+    }
+    assert repr(func) == '\n'.join([
+        'method = get_method(environ=environ)',
+        'headers = get_headers(environ=environ)',
+        'return echo_method_and_headers(method=method, headers=headers)'
+    ])
+
+
+def test_context_manager():
+    class Session():
+        events = []
+
+        def __init__(self):
+            pass
+
+        def __enter__(self):
+            self.events.append('__enter__')
+
+        def __exit__(self, *args, **kwargs):
+            self.events.append('__exit__')
+
+    injector = dependency.Injector(providers={
+        Session: Session,
+    })
+
+    def do_something(session: Session):
+        pass
+
+    func = injector.inject(do_something)
+    func()
+
+    assert Session.events == ['__enter__', '__exit__']
+    assert repr(func) == '\n'.join([
+        'with Session() as session:',
+        '    return do_something(session=session)'
+    ])
