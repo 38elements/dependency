@@ -63,7 +63,6 @@ class App():
 
 def homepage(method: Method, path: Path, headers: Headers, args: URLArgs):
     import json
-    print(headers)
     content = json.dumps({
         'method': method,
         'path': path,
