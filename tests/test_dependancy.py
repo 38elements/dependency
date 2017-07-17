@@ -118,5 +118,7 @@ def test_param_name():
 
     assert func(lookups={'a': 123, 'b': 456}) == 'a: 123, b: 456'
     assert repr(func) == '\n'.join([
-        ''
+        'lookup:a = get_lookup(lookups=lookups)',
+        'lookup:b = get_lookup(lookups=lookups)',
+        'return make_lookups(a=lookup:a, b=lookup:b)'
     ])

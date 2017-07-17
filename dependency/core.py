@@ -102,19 +102,22 @@ class Injector():
         self.required_state = required_state
 
     def inject(self, func: typing.Callable) -> InjectedFunction:
-        seen_types = set(self.required_state.values())
-        parameterized_by_name = set([
+        parameterized_types = set([
             provided_type for provided_type, provider_func
             in self.providers.items()
-            if is_parameterized_by_name(provider_func)
+            if provides_parameterized_type(provider_func)
+        ])
+        seen_keys = set([
+            get_key(cls, None, set())
+            for cls in self.required_state.values()
         ])
         steps = create_steps(
             func,
             provided_type=None,
             param_name=None,
             providers=self.providers,
-            parameterized_by_name=parameterized_by_name,
-            seen_types=seen_types
+            parameterized_types=parameterized_types,
+            seen_keys=seen_keys
         )
         return InjectedFunction(steps, dict(self.required_state))
 
@@ -123,19 +126,19 @@ def is_context_manager(obj: typing.Any):
     return hasattr(obj, '__enter__') and hasattr(obj, '__exit__')
 
 
-def is_parameterized_by_name(func: typing.Callable):
+def provides_parameterized_type(func: typing.Callable):
     params = inspect.signature(func).parameters.values()
     return any([param.annotation is ParamName for param in params])
 
 
-def get_key(cls: typing.Union[type, None], param_name: str, parameterized_by_name=typing.Set[type]) -> str:
+def get_key(cls: typing.Union[type, None], param_name: str, parameterized_types=typing.Set[type]) -> str:
     """
     Return a unique string name for a class.
     """
     if cls is None:
         return ''
     key = cls.__name__.lower()
-    if cls in parameterized_by_name:
+    if cls in parameterized_types:
         key += ':' + param_name
     return key
 
@@ -143,7 +146,7 @@ def get_key(cls: typing.Union[type, None], param_name: str, parameterized_by_nam
 def create_step(func: typing.Callable,
                 provided_type: type,
                 param_name: str,
-                parameterized_by_name: typing.Set[type]) -> Step:
+                parameterized_types: typing.Set[type]) -> Step:
     """
     Return all the information required to run a single step.
     """
@@ -154,7 +157,7 @@ def create_step(func: typing.Callable,
         assert not isinstance(param.annotation, str)
 
     input_keys = {
-        param.name: get_key(param.annotation, param.name, parameterized_by_name)
+        param.name: get_key(param.annotation, param.name, parameterized_types)
         for param in params
         if not param.annotation is ParamName
     }
@@ -168,7 +171,7 @@ def create_step(func: typing.Callable,
         func=func,
         input_keys=input_keys,
         input_types={param.name: param.annotation for param in params},
-        output_key=get_key(provided_type, param_name, parameterized_by_name),
+        output_key=get_key(provided_type, param_name, parameterized_types),
         output_type=provided_type,
         param_names=param_names,
         is_context_manager=is_context_manager(provided_type)
@@ -179,17 +182,18 @@ def create_steps(func: typing.Callable,
                  provided_type: type,
                  param_name: str,
                  providers: typing.Dict[type, typing.Callable],
-                 parameterized_by_name: typing.Set[type],
-                 seen_types: typing.Set[type]) -> typing.List[Step]:
+                 parameterized_types: typing.Set[type],
+                 seen_keys: typing.Set[str]) -> typing.List[Step]:
     """
     Return all the dependant steps required to run the given function.
     """
-    seen_types = set(seen_types)
+    seen_keys = set(seen_keys)
     steps = []
     params = inspect.signature(func).parameters.values()
 
     for param in params:
-        if (param.annotation in seen_types) or (param.annotation is ParamName):
+        key = get_key(param.annotation, param.name, parameterized_types)
+        if (key in seen_keys) or (param.annotation is ParamName):
             continue
 
         assert param.annotation is not inspect.Signature.empty
@@ -198,14 +202,13 @@ def create_steps(func: typing.Callable,
 
         provider_func = providers[param.annotation]
         param_steps = create_steps(
-            provider_func, param.annotation, param.name, providers, parameterized_by_name, seen_types
+            provider_func, param.annotation, param.name, providers, parameterized_types, seen_keys
         )
         steps.extend(param_steps)
-        seen_types |= set([
-            step.output_type for step in param_steps
-            if step.output_type not in parameterized_by_name
+        seen_keys |= set([
+            step.output_key for step in param_steps
         ])
 
-    step = create_step(func, provided_type, param_name, parameterized_by_name)
+    step = create_step(func, provided_type, param_name, parameterized_types)
     steps.append(step)
     return steps
