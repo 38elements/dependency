@@ -5,7 +5,7 @@ import inspect
 _default_injector = None
 
 
-def get_default_injector():
+def _get_default_injector():
     global _default_injector
 
     if _default_injector is None:
@@ -14,12 +14,17 @@ def get_default_injector():
 
 
 def set_required_state(state):
-    injector = get_default_injector()
-    injector.set_required_state(state)
+    injector = _get_default_injector()
+    injector.required_state = required_state
+
+
+def set_providers(providers):
+    injector = _get_default_injector()
+    injector.providers = providers
 
 
 def provider(func):
-    injector = get_default_injector()
+    injector = _get_default_injector()
 
     sig = inspect.signature(func)
 
@@ -34,5 +39,5 @@ def provider(func):
 
 
 def inject(func):
-    injector = get_default_injector()
+    injector = _get_default_injector()
     return injector.inject(func)

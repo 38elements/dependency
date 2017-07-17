@@ -1,3 +1,4 @@
+# pip install dependency werkzeug
 import typing
 import dependency
 from werkzeug.datastructures import ImmutableMultiDict, EnvironHeaders
@@ -64,7 +65,10 @@ def get_url_arg(name: dependency.ParamName, args: URLArgs) -> URLArg:
 
 class App():
     def __init__(self, urls):
-        self.map = Map(urls)
+        self.map = Map([
+            Rule(key, endpoint=value)
+            for key, value in urls.items()
+        ])
         self.injected_funcs = {}
         dependency.set_required_state({
             'environ': Environ,
@@ -83,31 +87,29 @@ class App():
             response = exc.get_response(environ)
         return response(environ, start_response)
 
-
-def homepage(method: Method, path: Path, headers: Headers, args: URLArgs):
-    import json
-    content = json.dumps({
-        'method': method,
-        'path': path,
-        'headers': dict(headers),
-        'args': args
-    }, indent=4).encode('utf-8')
-    return Response(content)
+    def run(self, hostname='localhost', port=8080):
+        run_simple(hostname, port, app)
 
 
-def user(user: URLArg):
-    import json
-    content = json.dumps({
-        'user': user
-    }, indent=4).encode('utf-8')
-    return Response(content)
-
-
-app = App([
-    Rule('/', endpoint=homepage),
-    Rule('/<user>/', endpoint=user),
-])
-
-
-if __name__ == '__main__':
-    run_simple('localhost', 8080, app)
+# Example:
+#
+# from web_framework import Method, Path, Headers, App, Response
+# import json
+#
+#
+# def echo_request_info(method: Method, path: Path, headers: Headers):
+#     content = json.dumps({
+#         'method': method,
+#         'path': path,
+#         'headers': dict(headers),
+#     }, indent=4).encode('utf-8')
+#     return Response(content)
+#
+#
+# app = App({
+#     '/': echo_request_info
+# })
+#
+#
+# if __name__ == '__main__':
+#     app.run()
