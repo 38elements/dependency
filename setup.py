@@ -42,7 +42,6 @@ setup(
     install_requires=[],
     classifiers=[
         'Development Status :: 3 - Alpha',
-        'Environment :: Web Environment',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',

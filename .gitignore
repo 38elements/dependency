@@ -1,4 +1,5 @@
 .cache/
+dependency.egg-info/
 .coverage
 htmlcov/
 venv/
