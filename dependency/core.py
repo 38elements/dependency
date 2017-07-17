@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from contextlib import ExitStack
 import inspect
 import tempfile
@@ -160,11 +161,11 @@ def create_step(func: typing.Callable,
         assert param.annotation is not inspect.Signature.empty
         assert not isinstance(param.annotation, str)
 
-    input_keys = {
-        param.name: get_key(param.annotation, param.name, parameterized_types)
+    input_keys = OrderedDict([
+        (param.name, get_key(param.annotation, param.name, parameterized_types))
         for param in params
         if not param.annotation is ParamName
-    }
+    ])
     param_names = {
         param.name: param_name
         for param in params
