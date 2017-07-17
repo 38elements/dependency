@@ -1,4 +1,5 @@
 import dependency
+import typing
 
 
 def test_injection():
@@ -33,7 +34,7 @@ def test_injection():
             Method: get_method,
             Headers: get_headers
         },
-        state={
+        required_state={
             'environ': Environ
         }
     )
@@ -91,4 +92,31 @@ def test_context_manager():
     assert repr(func) == '\n'.join([
         'with Session() as session:',
         '    return do_something(session=session)'
+    ])
+
+
+def test_param_name():
+    Lookups = typing.NewType('Lookups', dict)
+    Lookup = typing.NewType('Lookup', str)
+
+    def get_lookup(name: dependency.ParamName, lookups: Lookups):
+        return lookups[name]
+
+    injector = dependency.Injector(
+        providers={
+            Lookup: get_lookup,
+        },
+        required_state={
+            'lookups': Lookups
+        }
+    )
+
+    def make_lookups(a: Lookup, b: Lookup):
+        return 'a: %d, b: %d' % (a, b)
+
+    func = injector.inject(make_lookups)
+
+    assert func(lookups={'a': 123, 'b': 456}) == 'a: 123, b: 456'
+    assert repr(func) == '\n'.join([
+        ''
     ])

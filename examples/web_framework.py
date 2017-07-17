@@ -7,11 +7,14 @@ from werkzeug.serving import run_simple
 from werkzeug.wrappers import Request, Response
 
 
+# Initial state
 Environ = typing.NewType('Environ', dict)
+URLArgs = typing.NewType('URLArgs', dict)
+
+# Dependency injected types
 Method = typing.NewType('Method', str)
 Headers = EnvironHeaders
 Path = typing.NewType('Path', str)
-URLArgs = typing.NewType('URLArgs', dict)
 
 
 @dependency.provider
@@ -35,7 +38,6 @@ def get_headers(environ: Environ) -> Headers:
 
 
 # body
-# urlargs
 # urlarg
 # header
 # queryparams
@@ -44,14 +46,17 @@ def get_headers(environ: Environ) -> Headers:
 
 class App():
     def __init__(self, urls):
-        self.url_map = Map(urls)
+        self.map = Map(urls)
         self.injected_funcs = {}
-        dependency.required_state({'environ': Environ, 'url_args': URLArgs})
+        dependency.set_required_state({
+            'environ': Environ,
+            'url_args': URLArgs
+        })
         for rule in urls:
             self.injected_funcs[rule.endpoint] = dependency.inject(rule.endpoint)
 
     def __call__(self, environ, start_response):
-        urls = self.url_map.bind_to_environ(environ)
+        urls = self.map.bind_to_environ(environ)
         try:
             endpoint, args = urls.match()
             func = self.injected_funcs[endpoint]

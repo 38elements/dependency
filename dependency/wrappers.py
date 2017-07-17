@@ -13,9 +13,9 @@ def get_default_injector():
     return _default_injector
 
 
-def required_state(state):
+def set_required_state(state):
     injector = get_default_injector()
-    injector.required_state(state)
+    injector.set_required_state(state)
 
 
 def provider(func):
