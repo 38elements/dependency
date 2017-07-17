@@ -49,7 +49,7 @@ if __name__ == '__main__':
 You can see that the views have more expressive interfaces and are more
 easily testable, than if every function accepted a single `request` argument.
 
-The framework source code is available here: [example/web_framework.py](/dependency/example/web_framework.py)
+The framework source code is available here: [example/web_framework.py](/examples/web_framework.py)
 
 The `dependency` package supports context managers, so you could also provide
 components such as a `Session` that automatically handles commit/rollback
@@ -90,4 +90,4 @@ if __name__ == "__main__":
     run_tests()
 ```
 
-The framework source code is available here: [example/test_framework.py](/dependency/example/test_framework.py)
+The framework source code is available here: [example/test_framework.py](/examples/test_framework.py)
