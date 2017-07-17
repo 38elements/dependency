@@ -1,4 +1,4 @@
-# dependency
+# Dependency
 
 *A dependency injection library, using Python type annotations.*
 
@@ -8,7 +8,9 @@ and testability in large codebases.
 The `dependency` package provides the building blocks required to
 implement type-annotation based dependency injection.
 
-## Web framework
+## Examples
+
+### Web framework
 
 Let's take a look at the sort of code the `dependency` package allows you to write.
 
@@ -55,7 +57,7 @@ The `dependency` package supports context managers, so you could also provide
 components such as a `Session` that automatically handles commit/rollback
 depending on if a view returns normally or raises an exception.
 
-## Test framework
+### Test framework
 
 Here's another example, of using `dependency` to create a testing framework
 that supports dependency-injection of reusable components into test cases...
@@ -91,3 +93,9 @@ if __name__ == "__main__":
 ```
 
 The framework source code is available here: [/examples/test_framework.py](/examples/test_framework.py)
+
+---
+
+## API Reference
+
+...
