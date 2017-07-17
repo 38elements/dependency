@@ -10,10 +10,10 @@ ParamName = typing.NewType('ParamName', str)
 Step = typing.NamedTuple('Step', [
     ('func', typing.Callable),
     ('input_keys', typing.Dict[str, str]),
-    ('input_types', typing.Dict[str, typing.Type]),
+    ('input_types', typing.Dict[str, type]),
     ('output_key', str),
-    ('output_type', typing.Type),
-    ('param_names', typing.Dict[str, str]),
+    ('output_type', type),
+    ('param_names', typing.Optional[typing.Dict[str, str]]),
     ('is_context_manager', bool)
 ])
 
@@ -21,7 +21,7 @@ Step = typing.NamedTuple('Step', [
 class InjectedFunction():
     def __init__(self,
                  steps: typing.List[Step],
-                 required_state: typing.Dict[str, type]):
+                 required_state: typing.Dict[str, type]) -> None:
         self.steps = steps
         self.kwarg_to_state_key = {
             key: get_key(value, None, set())
@@ -41,7 +41,9 @@ class InjectedFunction():
                     argname: state[state_key]
                     for (argname, state_key) in step.input_keys.items()
                 }
-                ret = step.func(**kwargs, **step.param_names)
+                if step.param_names is not None:
+                    kwargs.update(step.param_names)
+                ret = step.func(**kwargs)
                 if step.is_context_manager:
                     stack.enter_context(ret)
                 state[step.output_key] = ret
@@ -60,7 +62,7 @@ class InjectedFunction():
     def _step_repr(self,
                    step: Step,
                    indent: int=0,
-                   final: bool=False) -> str:
+                   final: bool=False) -> typing.Tuple[str, int]:
         params = ', '.join([
             '%s=%s' % (argname, state_key)
             for argname, state_key in step.input_keys.items()
@@ -85,7 +87,7 @@ class Injector():
     """
 
     def __init__(self,
-                 providers: typing.Dict[str, typing.Callable]=None,
+                 providers: typing.Dict[type, typing.Callable]=None,
                  required_state: typing.Dict[str, type]=None) -> None:
         if providers is None:
             providers = {}
@@ -131,21 +133,23 @@ def provides_parameterized_type(func: typing.Callable):
     return any([param.annotation is ParamName for param in params])
 
 
-def get_key(cls: typing.Union[type, None], param_name: str, parameterized_types=typing.Set[type]) -> str:
+def get_key(cls: typing.Union[type, None],
+            param_name: typing.Optional[str],
+            parameterized_types=typing.Set[type]) -> str:
     """
     Return a unique string name for a class.
     """
     if cls is None:
         return ''
     key = cls.__name__.lower()
-    if cls in parameterized_types:
+    if param_name is not None and cls in parameterized_types:
         key += ':' + param_name
     return key
 
 
 def create_step(func: typing.Callable,
-                provided_type: type,
-                param_name: str,
+                provided_type: typing.Optional[type],
+                param_name: typing.Optional[str],
                 parameterized_types: typing.Set[type]) -> Step:
     """
     Return all the information required to run a single step.
@@ -166,6 +170,8 @@ def create_step(func: typing.Callable,
         for param in params
         if param.annotation is ParamName
     }
+    if not param_names:
+        param_names = None
 
     return Step(
         func=func,
@@ -179,8 +185,8 @@ def create_step(func: typing.Callable,
 
 
 def create_steps(func: typing.Callable,
-                 provided_type: type,
-                 param_name: str,
+                 provided_type: typing.Optional[type],
+                 param_name: typing.Optional[str],
                  providers: typing.Dict[type, typing.Callable],
                  parameterized_types: typing.Set[type],
                  seen_keys: typing.Set[str]) -> typing.List[Step]:

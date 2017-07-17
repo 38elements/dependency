@@ -112,7 +112,7 @@ def test_param_name():
     )
 
     def make_lookups(a: Lookup, b: Lookup):
-        return 'a: %d, b: %d' % (a, b)
+        return 'a: %s, b: %s' % (a, b)
 
     func = injector.inject(make_lookups)
 

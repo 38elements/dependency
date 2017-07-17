@@ -1,9 +1,10 @@
 import typing
 import dependency
-from werkzeug.datastructures import EnvironHeaders
+from werkzeug.datastructures import ImmutableMultiDict, EnvironHeaders
 from werkzeug.exceptions import HTTPException
 from werkzeug.routing import Map, Rule
 from werkzeug.serving import run_simple
+from werkzeug.urls import url_decode
 from werkzeug.wrappers import Request, Response
 
 
@@ -13,8 +14,12 @@ URLArgs = typing.NewType('URLArgs', dict)
 
 # Dependency injected types
 Method = typing.NewType('Method', str)
-Headers = EnvironHeaders
 Path = typing.NewType('Path', str)
+Headers = EnvironHeaders
+Header = typing.NewType('Header', str)
+QueryParams = typing.NewType('QueryParams', ImmutableMultiDict)
+QueryParam = typing.NewType('QueryParam', str)
+URLArg = typing.TypeVar('URLArg')
 
 
 @dependency.provider
@@ -24,12 +29,12 @@ def get_request(environ: Environ) -> Request:
 
 @dependency.provider
 def get_method(environ: Environ) -> Method:
-    return environ['REQUEST_METHOD'].upper()
+    return Method(environ['REQUEST_METHOD'].upper())
 
 
 @dependency.provider
 def get_path(environ: Environ) -> Path:
-    return environ['SCRIPT_NAME'] + environ['PATH_INFO']
+    return Path(environ['SCRIPT_NAME'] + environ['PATH_INFO'])
 
 
 @dependency.provider
@@ -37,11 +42,24 @@ def get_headers(environ: Environ) -> Headers:
     return Headers(environ)
 
 
-# body
-# urlarg
-# header
-# queryparams
-# queryparam
+@dependency.provider
+def get_header(name: dependency.ParamName, headers: Headers) -> Header:
+    return Header(headers.get(name.replace('_', '-')))
+
+
+@dependency.provider
+def get_queryparams(environ: Environ) -> QueryParams:
+    return QueryParams(url_decode(environ.get('QUERY_STRING', '')))
+
+
+@dependency.provider
+def get_queryparam(name: dependency.ParamName, params: QueryParams) -> QueryParam:
+    return QueryParam(params.get(name))
+
+
+@dependency.provider
+def get_url_arg(name: dependency.ParamName, args: URLArgs) -> URLArg:
+    return args.get(name)
 
 
 class App():
@@ -73,14 +91,21 @@ def homepage(method: Method, path: Path, headers: Headers, args: URLArgs):
         'path': path,
         'headers': dict(headers),
         'args': args
-    }, indent=4)
+    }, indent=4).encode('utf-8')
+    return Response(content)
+
+
+def user(user: URLArg):
+    import json
+    content = json.dumps({
+        'user': user
+    }, indent=4).encode('utf-8')
     return Response(content)
 
 
 app = App([
     Rule('/', endpoint=homepage),
-    Rule('/<first>/', endpoint=homepage),
-    Rule('/<first>/<int:second>/', endpoint=homepage),
+    Rule('/<user>/', endpoint=user),
 ])
 
 
