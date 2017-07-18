@@ -17,11 +17,12 @@ implement type-annotation based dependency injection.
 
 ## Examples
 
+Rather than starting with the API of the package itself, let's instead take
+a look at the sort of code the `dependency` package allows you to write.
+
 ### Web framework
 
-Let's take a look at the sort of code the `dependency` package allows you to write.
-
-In this case we've got a web framework that supports dependency injected components
+In this case we've built a web framework that supports dependency injected components
 to provide the information that each view uses:
 
 ```python
@@ -55,14 +56,10 @@ if __name__ == '__main__':
     app.run()
 ```
 
-You can see that the views have more expressive interfaces and are more
-easily testable, than if every function accepted a single `request` argument.
+You can see that the views have more expressive interfaces and are more easily
+testable than they would be if every function accepted a single `request` argument.
 
 The framework source code is available here: [/examples/web_framework.py](/examples/web_framework.py)
-
-The `dependency` package supports context managers, so you could also provide
-components such as a `Session` that automatically handles commit/rollback
-depending on if a view returns normally or raises an exception.
 
 ### Test framework
 
@@ -103,6 +100,85 @@ The framework source code is available here: [/examples/test_framework.py](/exam
 
 ---
 
-## API Reference
+## Library usage
 
-...
+The core functionality is provided as two functions:
+
+* `dependency.provider(func: Callable)` - Add a provider function.
+* `dependency.inject(func: Callable)` - Create a dependency injected function.
+
+You can use these either as plain function calls, or as decorators...
+
+    import datetime
+    import dependency
+    import typing
+
+    Now = typing.NewType('Now', datetime.datetime)
+
+    @dependency.provider
+    def get_now() -> Now:
+        datetime.datetime.now()
+
+    @dependency.inject
+    def do_something(now: Now):
+        ...
+
+    do_something()
+
+The functions passed to `dependency.provider()` must be fully type annotated.
+The parameters of a provider function may include class dependencies themselves.
+
+### Working with initial state
+
+Often you'll want your provider functions to depend on some initial state.
+This might be something that's setup when your application is initialised,
+or state that exists in the context of a single HTTP request/response cycle.
+
+* `dependency.set_required_state(required_state: Dict[str, type])`
+
+You can include required state classes in provider functions...
+
+    import dependency
+
+    # Add some provider functions
+    @dependency.provider
+    def get_database_session(engine: Engine) -> Session:
+        """
+        Return a database session, given the database engine.
+        """
+
+    @dependency.provider
+    def create_database_engine(settings: settings) -> Engine:
+        """
+        Return a database engine instance, given the application settings.
+        """
+
+    @dependency.provider
+    def get_request(environ: Environ) -> Request:
+        """
+        Return a request instance, given a WSGI environ.
+        """
+
+    # Indicate classes that will be provided as initial state
+    dependency.set_required_state({'settings': Settings, 'environ': Environ})
+
+    # Wrap a function in a dependency injection
+    @dependency.inject
+    def list_users(request: Request, session: Session):
+        ...
+
+In order to run a dependency that has some required initial state, you'll
+first need to setup that state.
+
+* `dependency.set_state(state: Dict[str, Any])
+
+For example...
+
+    dependency.set_state({'settings': ..., 'environ': ...})
+    list_users()
+
+### Context managers
+
+The `dependency` package supports context managers, so you could also provide
+components such as a `Session` that automatically handles commit/rollback
+depending on if a view returns normally or raises an exception.
