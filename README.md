@@ -74,7 +74,7 @@ import dependency
 import os
 
 
-@dependency.provider
+@dependency.add_provider
 def get_temp_dir() -> TemporaryDirectory:
     """
     A temporary directory component that may be injected into test cases.
@@ -105,7 +105,7 @@ The framework source code is available here: [/examples/test_framework.py](/exam
 
 The core functionality is provided as two functions:
 
-* `dependency.provider(func: Callable)` - Add a provider function.
+* `dependency.add_provider(func: Callable)` - Add a provider function.
 * `dependency.inject(func: Callable)` - Create a dependency injected function.
 
 You can use these either as plain function calls, or as decorators...
@@ -117,7 +117,7 @@ import typing
 
 Now = typing.NewType('Now', datetime.datetime)
 
-@dependency.provider
+@dependency.add_provider
 def get_now() -> Now:
     datetime.datetime.now()
 
@@ -128,7 +128,7 @@ def do_something(now: Now):
 do_something()
 ```
 
-The functions passed to `dependency.provider()` must be fully type annotated.
+The functions passed to `dependency.add_provider()` must be fully type annotated.
 The parameters of a provider function may include class dependencies themselves.
 
 ### Working with initial state
@@ -145,19 +145,19 @@ You can include required state classes in provider functions...
 import dependency
 
 # Add some provider functions
-@dependency.provider
+@dependency.add_provider
 def get_database_session(engine: Engine) -> Session:
     """
     Return a database session, given the database engine.
     """
 
-@dependency.provider
+@dependency.add_provider
 def create_database_engine(settings: settings) -> Engine:
     """
     Return a database engine instance, given the application settings.
     """
 
-@dependency.provider
+@dependency.add_provider
 def get_request(environ: Environ) -> Request:
     """
     Return a request instance, given a WSGI environ.
