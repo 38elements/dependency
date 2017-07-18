@@ -19,19 +19,9 @@ def set_required_state(required_state: typing.Dict[str, type]) -> None:
     injector.required_state = required_state
 
 
-def provider(func: typing.Callable) -> None:
+def add_provider(func: typing.Callable) -> None:
     injector = _get_default_injector()
-
-    sig = inspect.signature(func)
-
-    params = sig.parameters.values()
-    for param in params:
-        assert param.annotation is not inspect.Signature.empty
-        assert not isinstance(param.annotation, str)
-
-    assert sig.return_annotation is not inspect.Signature.empty
-    assert not isinstance(sig.return_annotation, str)
-    injector.providers[sig.return_annotation] = func
+    injector.add_provider(func)
 
 
 def inject(func: typing.Callable) -> dependency.InjectedFunction:

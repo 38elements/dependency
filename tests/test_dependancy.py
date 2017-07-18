@@ -66,7 +66,7 @@ def test_injection():
 
 def test_wrappers():
     """
-    Test the `@dependency.provider` and `@depenency.inject` wrappers.
+    Test the `@dependency.add_provider` and `@depenency.inject` wrappers.
     """
     class Environ(dict):
         pass
@@ -77,11 +77,11 @@ def test_wrappers():
     class Headers(dict):
         pass
 
-    @dependency.provider
+    @dependency.add_provider
     def get_method(environ: Environ) -> Method:
         return Method(environ['METHOD'])
 
-    @dependency.provider
+    @dependency.add_provider
     def get_headers(environ: Environ) -> Headers:
         headers = {}
         for key, value in environ.items():
