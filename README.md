@@ -172,19 +172,8 @@ def list_users(request: Request, session: Session):
 ```
 
 In order to run a dependency that has some required initial state, you'll
-first need to setup that state.
-
-* `dependency.set_state(state: Dict[str, Any])`
-
-For example...
+need to include the state as a keyword argument.
 
 ```python
-dependency.set_state({'settings': ..., 'environ': ...})
-list_users()
+list_users(state={'settings': ..., 'environ': ...})
 ```
-
-### Context managers
-
-The `dependency` package supports context managers, so you could also provide
-components such as a `Session` that automatically handles commit/rollback
-depending on if a view returns normally or raises an exception.

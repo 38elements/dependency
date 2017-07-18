@@ -82,7 +82,8 @@ class App():
         try:
             endpoint, args = urls.match()
             func = self.injected_funcs[endpoint]
-            response = func(environ=environ, url_args=args)
+            state = {'environ': environ, 'url_args': args}
+            response = func(state=state)
         except HTTPException as exc:
             response = exc.get_response(environ)
         return response(environ, start_response)

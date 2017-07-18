@@ -3,6 +3,9 @@ import typing
 
 
 def test_injection():
+    """
+    Test the Injector class.
+    """
     class Environ(dict):
         pass
 
@@ -26,9 +29,6 @@ def test_injection():
                 headers[key] = value
         return Headers(headers)
 
-    def echo_method_and_headers(method: Method, headers: Headers):
-        return {'method': method, 'headers': headers}
-
     injector = dependency.Injector(
         providers={
             Method: get_method,
@@ -39,21 +39,19 @@ def test_injection():
         }
     )
 
-    func = injector.inject(echo_method_and_headers)
-    assert [
-        step.func for step in func.steps
-    ] == [
-        get_method,
-        get_headers,
-        echo_method_and_headers
-    ]
+    def echo_method_and_headers(method: Method, headers: Headers):
+        return {'method': method, 'headers': headers}
 
-    environ = {
-        'METHOD': 'GET',
-        'CONTENT_TYPE': 'application/json',
-        'HTTP_HOST': '127.0.0.1'
+    func = injector.inject(echo_method_and_headers)
+    state = {
+        'environ': {
+            'METHOD': 'GET',
+            'CONTENT_TYPE': 'application/json',
+            'HTTP_HOST': '127.0.0.1'
+        }
     }
-    result = func(environ=environ)
+    result = func(state=state)
+
     assert result == {
         'method': 'GET',
         'headers': {'content-type': 'application/json', 'host': '127.0.0.1'}
@@ -65,7 +63,68 @@ def test_injection():
     ])
 
 
+def test_wrappers():
+    """
+    Test the `@dependency.provider` and `@depenency.inject` wrappers.
+    """
+    class Environ(dict):
+        pass
+
+    class Method(str):
+        pass
+
+    class Headers(dict):
+        pass
+
+    @dependency.provider
+    def get_method(environ: Environ) -> Method:
+        return Method(environ['METHOD'])
+
+    @dependency.provider
+    def get_headers(environ: Environ) -> Headers:
+        headers = {}
+        for key, value in environ.items():
+            if key.startswith('HTTP_'):
+                key = key[5:].replace('_', '-').lower()
+                headers[key] = value
+            elif key in ('CONTENT_TYPE', 'CONTENT_LENGTH'):
+                key = key.replace('_', '-').lower()
+                headers[key] = value
+        return Headers(headers)
+
+    dependency.set_required_state({
+        'environ': Environ
+    })
+
+    @dependency.inject
+    def echo_method_and_headers(method: Method, headers: Headers):
+        return {'method': method, 'headers': headers}
+
+    state = {
+        'environ': {
+            'METHOD': 'GET',
+            'CONTENT_TYPE': 'application/json',
+            'HTTP_HOST': '127.0.0.1'
+        }
+    }
+    result = echo_method_and_headers(state=state)
+
+    assert result == {
+        'method': 'GET',
+        'headers': {'content-type': 'application/json', 'host': '127.0.0.1'}
+    }
+    assert repr(echo_method_and_headers) == '\n'.join([
+        'method = get_method(environ=environ)',
+        'headers = get_headers(environ=environ)',
+        'return echo_method_and_headers(method=method, headers=headers)'
+    ])
+
+
 def test_context_manager():
+    """
+    Context managers should handle setup and teaddown.
+    """
+
     class Session():
         events = []
 
@@ -96,6 +155,10 @@ def test_context_manager():
 
 
 def test_param_name():
+    """
+    The ParamName class can be used to provide the parameter name
+    that was used for the dependency injection.
+    """
     Lookups = typing.NewType('Lookups', dict)
     Lookup = typing.NewType('Lookup', str)
 
@@ -116,7 +179,10 @@ def test_param_name():
 
     func = injector.inject(make_lookups)
 
-    assert func(lookups={'a': 123, 'b': 456}) == 'a: 123, b: 456'
+    state = {
+        'lookups': {'a': 123, 'b': 456}
+    }
+    assert func(state=state) == 'a: 123, b: 456'
     assert repr(func) == '\n'.join([
         'lookup:a = get_lookup(lookups=lookups)',
         'lookup:b = get_lookup(lookups=lookups)',

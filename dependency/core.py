@@ -24,17 +24,20 @@ class InjectedFunction():
                  steps: typing.List[Step],
                  required_state: typing.Dict[str, type]) -> None:
         self.steps = steps
-        self.kwarg_to_state_key = {
+        self.state_key_mapping = {
             key: get_key(value, None, set())
             for key, value in required_state.items()
         }
 
-    def __call__(self, **kwargs):
+    def __call__(self, state=None):
         ret = None
-        state = {
-            self.kwarg_to_state_key[key]: value
-            for key, value in kwargs.items()
-        }
+        if state is None:
+            state = {}
+        else:
+            state = {
+                self.state_key_mapping[key]: value
+                for key, value in state.items()
+            }
 
         with ExitStack() as stack:
             for step in self.steps:
@@ -98,12 +101,6 @@ class Injector():
         self.providers = providers
         self.required_state = required_state
 
-    def set_required_state(self,
-                           required_state: typing.Dict[str, type]=None) -> None:
-        if required_state is None:
-            required_state = {}
-        self.required_state = required_state
-
     def inject(self, func: typing.Callable) -> InjectedFunction:
         parameterized_types = set([
             provided_type for provided_type, provider_func
@@ -139,6 +136,9 @@ def get_key(cls: typing.Union[type, None],
             parameterized_types=typing.Set[type]) -> str:
     """
     Return a unique string name for a class.
+
+    If the class is a dependency that requires its own parameter name as one
+    of the inputs then additionally suffix the key with the parameter name.
     """
     if cls is None:
         return ''
