@@ -178,3 +178,33 @@ need to include the state as a keyword argument.
 ```python
 list_users(state={'settings': ..., 'environ': ...})
 ```
+
+### Namespaced dependencies
+
+The function calls we've looked at so far all operate against a single
+global dependency namespace, but you can also create individual instances
+giving you more explicit control over the dependency injection.
+
+```python
+injector = dependency.Injector()
+
+@injector.add_provider
+def get_now() -> Now:
+    datetime.datetime.now()
+
+@injector.inject
+def do_something(now: Now):
+    ...
+```
+
+The constructor takes two arguments, both of which are optional:
+
+* `providers: Dict[type, Callable]` - A map of dependency types onto their provider functions.
+* `required_state: Dict[str, type]` - A map of any dependency types which will be provided as initial state.
+
+These are also both available directly on the instance...
+
+```python
+injector = dependency.Injector()
+injector.providers[Now] = get_now
+```
