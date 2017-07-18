@@ -3,6 +3,7 @@
 *A dependency injection library, using Python type annotations.*
 
 [![Build Status](https://travis-ci.org/encode/dependency.svg?branch=master)](https://travis-ci.org/encode/dependency)
+[![codecov](https://codecov.io/gh/encode/dependency/branch/master/graph/badge.svg)](https://codecov.io/gh/encode/dependency)
 [![Package version](https://badge.fury.io/py/dependency.svg)](https://pypi.python.org/pypi/dependency)
 
 **Requirements**: Python 3.5+

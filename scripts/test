@@ -1,12 +1,19 @@
 #!/bin/sh -e
 
 export PACKAGE="dependency"
+
 export PREFIX=""
 if [ -d 'venv' ] ; then
     export PREFIX="venv/bin/"
 fi
 
+export EXTRA_COVERAGE_FLAGS=""
+if [ "$TRAVIS" != "true" ] ; then
+    # If we're on travis we'll allow codecov to handle coverage pass/fail.
+    # Locally we enforce 100% coverage.
+    export EXTRA_COVERAGE_FLAGS="--cov-fail-under=100 --no-cov-on-fail"
+fi
+
 set -x
 
-PYTHONPATH=. ${PREFIX}pytest --ignore venv --ignore examples --cov=${PACKAGE} --cov=tests --cov-report=term-missing ${@}
-${PREFIX}coverage html
+PYTHONPATH=. ${PREFIX}pytest --ignore venv --ignore examples --cov=${PACKAGE} --cov=tests --cov-report=term-missing ${EXTRA_COVERAGE_FLAGS} ${@}

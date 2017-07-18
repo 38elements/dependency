@@ -1,0 +1,14 @@
+#!/bin/sh -e
+
+export PACKAGE="dependency"
+
+export PREFIX=""
+if [ -d 'venv' ] ; then
+    export PREFIX="venv/bin/"
+fi
+
+set -x
+
+${PREFIX}flake8 ${PACKAGE} tests
+${PREFIX}isort ${PACKAGE} tests --recursive --check-only
+${PREFIX}mypy ${PACKAGE} tests --disallow-untyped-calls
