@@ -1,7 +1,7 @@
-import dependency
 import inspect
 import typing
 
+import dependency
 
 _default_injector = None
 

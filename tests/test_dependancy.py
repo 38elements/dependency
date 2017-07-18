@@ -1,5 +1,6 @@
-import dependency
 import typing
+
+import dependency
 
 
 def test_injection():
