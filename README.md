@@ -4,7 +4,8 @@
 
 [![Build Status](https://travis-ci.org/encode/dependency.svg?branch=master)](https://travis-ci.org/encode/dependency)
 [![Package version](https://badge.fury.io/py/dependency.svg)](https://pypi.python.org/pypi/dependency)
-[![Python versions](https://img.shields.io/pypi/pyversions/dependency.svg)](https://www.python.org/doc/versions/)
+
+**Requirements**: Python 3.5+
 
 ---
 
