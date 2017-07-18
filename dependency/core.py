@@ -99,6 +99,12 @@ class Injector():
         self.providers = providers
         self.required_state = required_state
 
+    def add_provider(self, func: typing.Callable) -> None:
+        sig = inspect.signature(func)
+        assert sig.return_annotation is not inspect.Signature.empty
+        assert not isinstance(sig.return_annotation, str)
+        self.providers[sig.return_annotation] = func
+
     def inject(self, func: typing.Callable) -> InjectedFunction:
         parameterized_types = set([
             provided_type for provided_type, provider_func

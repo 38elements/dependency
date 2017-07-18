@@ -23,42 +23,42 @@ QueryParam = typing.NewType('QueryParam', str)
 URLArg = typing.TypeVar('URLArg')
 
 
-@dependency.provider
+@dependency.add_provider
 def get_request(environ: Environ) -> Request:
     return Request(environ)
 
 
-@dependency.provider
+@dependency.add_provider
 def get_method(environ: Environ) -> Method:
     return Method(environ['REQUEST_METHOD'].upper())
 
 
-@dependency.provider
+@dependency.add_provider
 def get_path(environ: Environ) -> Path:
     return Path(environ['SCRIPT_NAME'] + environ['PATH_INFO'])
 
 
-@dependency.provider
+@dependency.add_provider
 def get_headers(environ: Environ) -> Headers:
     return Headers(environ)
 
 
-@dependency.provider
+@dependency.add_provider
 def get_header(name: dependency.ParamName, headers: Headers) -> Header:
     return Header(headers.get(name.replace('_', '-')))
 
 
-@dependency.provider
+@dependency.add_provider
 def get_queryparams(environ: Environ) -> QueryParams:
     return QueryParams(url_decode(environ.get('QUERY_STRING', '')))
 
 
-@dependency.provider
+@dependency.add_provider
 def get_queryparam(name: dependency.ParamName, params: QueryParams) -> QueryParam:
     return QueryParam(params.get(name))
 
 
-@dependency.provider
+@dependency.add_provider
 def get_url_arg(name: dependency.ParamName, args: URLArgs) -> URLArg:
     return args.get(name)
 

@@ -38,7 +38,7 @@ def run_tests():
 # import os
 #
 #
-# @dependency.provider
+# @dependency.add_provider
 # def get_temp_dir() -> TemporaryDirectory:
 #     """
 #     A temporary directory component that may be injected into test cases.
