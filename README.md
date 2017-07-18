@@ -109,21 +109,23 @@ The core functionality is provided as two functions:
 
 You can use these either as plain function calls, or as decorators...
 
-    import datetime
-    import dependency
-    import typing
+```python
+import datetime
+import dependency
+import typing
 
-    Now = typing.NewType('Now', datetime.datetime)
+Now = typing.NewType('Now', datetime.datetime)
 
-    @dependency.provider
-    def get_now() -> Now:
-        datetime.datetime.now()
+@dependency.provider
+def get_now() -> Now:
+    datetime.datetime.now()
 
-    @dependency.inject
-    def do_something(now: Now):
-        ...
+@dependency.inject
+def do_something(now: Now):
+    ...
 
-    do_something()
+do_something()
+```
 
 The functions passed to `dependency.provider()` must be fully type annotated.
 The parameters of a provider function may include class dependencies themselves.
@@ -138,44 +140,48 @@ or state that exists in the context of a single HTTP request/response cycle.
 
 You can include required state classes in provider functions...
 
-    import dependency
+```python
+import dependency
 
-    # Add some provider functions
-    @dependency.provider
-    def get_database_session(engine: Engine) -> Session:
-        """
-        Return a database session, given the database engine.
-        """
+# Add some provider functions
+@dependency.provider
+def get_database_session(engine: Engine) -> Session:
+    """
+    Return a database session, given the database engine.
+    """
 
-    @dependency.provider
-    def create_database_engine(settings: settings) -> Engine:
-        """
-        Return a database engine instance, given the application settings.
-        """
+@dependency.provider
+def create_database_engine(settings: settings) -> Engine:
+    """
+    Return a database engine instance, given the application settings.
+    """
 
-    @dependency.provider
-    def get_request(environ: Environ) -> Request:
-        """
-        Return a request instance, given a WSGI environ.
-        """
+@dependency.provider
+def get_request(environ: Environ) -> Request:
+    """
+    Return a request instance, given a WSGI environ.
+    """
 
-    # Indicate classes that will be provided as initial state
-    dependency.set_required_state({'settings': Settings, 'environ': Environ})
+# Indicate classes that will be provided as initial state
+dependency.set_required_state({'settings': Settings, 'environ': Environ})
 
-    # Wrap a function in a dependency injection
-    @dependency.inject
-    def list_users(request: Request, session: Session):
-        ...
+# Wrap a function in a dependency injection
+@dependency.inject
+def list_users(request: Request, session: Session):
+    ...
+```
 
 In order to run a dependency that has some required initial state, you'll
 first need to setup that state.
 
-* `dependency.set_state(state: Dict[str, Any])
+* `dependency.set_state(state: Dict[str, Any])`
 
 For example...
 
-    dependency.set_state({'settings': ..., 'environ': ...})
-    list_users()
+```python
+dependency.set_state({'settings': ..., 'environ': ...})
+list_users()
+```
 
 ### Context managers
 
