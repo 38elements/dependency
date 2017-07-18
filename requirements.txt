@@ -1,3 +1,11 @@
 # Testing requirements
 pytest
 pytest-cov
+
+# Linting requirements
+flake8
+isort
+mypy
+
+# Continuous intergration
+codecov

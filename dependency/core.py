@@ -1,9 +1,7 @@
 from collections import OrderedDict
 from contextlib import ExitStack
 import inspect
-import tempfile
 import typing
-import functools
 
 
 ParamName = typing.NewType('ParamName', str)
@@ -87,7 +85,8 @@ class InjectedFunction():
 
 class Injector():
     """
-    Stores all the state determining how to create dependency injected functions.
+    Stores all the state required in order to create
+    dependency-injected functions.
     """
 
     def __init__(self,
@@ -162,9 +161,12 @@ def create_step(func: typing.Callable,
         assert not isinstance(param.annotation, str)
 
     input_keys = OrderedDict([
-        (param.name, get_key(param.annotation, param.name, parameterized_types))
+        (
+            param.name,
+            get_key(param.annotation, param.name, parameterized_types)
+        )
         for param in params
-        if not param.annotation is ParamName
+        if param.annotation is not ParamName
     ])
     param_names = {
         param.name: param_name
@@ -209,7 +211,8 @@ def create_steps(func: typing.Callable,
 
         provider_func = providers[param.annotation]
         param_steps = create_steps(
-            provider_func, param.annotation, param.name, providers, parameterized_types, seen_keys
+            provider_func, param.annotation, param.name, providers,
+            parameterized_types, seen_keys
         )
         steps.extend(param_steps)
         seen_keys |= set([
