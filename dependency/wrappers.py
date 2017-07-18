@@ -6,7 +6,7 @@ import typing
 _default_injector = None
 
 
-def _get_default_injector():
+def _get_default_injector() -> dependency.Injector:
     global _default_injector
 
     if _default_injector is None:
@@ -14,12 +14,12 @@ def _get_default_injector():
     return _default_injector
 
 
-def set_required_state(required_state: typing.Dict[str, type]):
+def set_required_state(required_state: typing.Dict[str, type]) -> None:
     injector = _get_default_injector()
     injector.required_state = required_state
 
 
-def provider(func: typing.Callable):
+def provider(func: typing.Callable) -> None:
     injector = _get_default_injector()
 
     sig = inspect.signature(func)
@@ -34,6 +34,6 @@ def provider(func: typing.Callable):
     injector.providers[sig.return_annotation] = func
 
 
-def inject(func: typing.Callable):
+def inject(func: typing.Callable) -> dependency.InjectedFunction:
     injector = _get_default_injector()
     return injector.inject(func)

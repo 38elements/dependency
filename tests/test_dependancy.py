@@ -159,8 +159,8 @@ def test_param_name():
     The ParamName class can be used to provide the parameter name
     that was used for the dependency injection.
     """
-    Lookups = typing.NewType('Lookups', dict)
-    Lookup = typing.NewType('Lookup', str)
+    Lookups = typing.NewType('Lookups', typing.Dict[str, int])
+    Lookup = typing.NewType('Lookup', int)
 
     def get_lookup(name: dependency.ParamName, lookups: Lookups):
         return lookups[name]
