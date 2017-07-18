@@ -120,8 +120,8 @@ class Injector():
         return InjectedFunction(steps, dict(self.required_state))
 
 
-def is_context_manager(obj: typing.Any):
-    return hasattr(obj, '__enter__') and hasattr(obj, '__exit__')
+def is_context_manager(cls: type):
+    return hasattr(cls, '__enter__') and hasattr(cls, '__exit__')
 
 
 def provides_parameterized_type(func: typing.Callable):

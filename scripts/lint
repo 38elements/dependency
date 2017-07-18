@@ -11,4 +11,4 @@ set -x
 
 ${PREFIX}flake8 ${PACKAGE} tests
 ${PREFIX}isort ${PACKAGE} tests --recursive --check-only
-${PREFIX}mypy ${PACKAGE} tests --ignore-missing-imports
+${PREFIX}mypy ${PACKAGE} tests --disallow-untyped-calls
