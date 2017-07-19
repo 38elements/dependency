@@ -8,8 +8,8 @@ ParamName = typing.NewType('ParamName', str)
 Step = typing.NamedTuple('Step', [
     ('func', typing.Callable),
     ('input_keys', typing.Dict[str, str]),
+    ('input_values', typing.Dict[str, str]),
     ('output_key', str),
-    ('param_names', typing.Optional[typing.Dict[str, str]]),
     ('is_context_manager', bool)
 ])
 
@@ -40,8 +40,7 @@ class InjectedFunction():
                     argname: state[state_key]
                     for (argname, state_key) in step.input_keys.items()
                 }
-                if step.param_names is not None:
-                    kwargs.update(step.param_names)
+                kwargs.update(step.input_values)
                 ret = step.func(**kwargs)
                 if step.is_context_manager:
                     stack.enter_context(ret)
@@ -159,10 +158,6 @@ def create_step(func: typing.Callable,
     """
     params = inspect.signature(func).parameters.values()
 
-    for param in params:
-        assert param.annotation is not inspect.Signature.empty
-        assert not isinstance(param.annotation, str)
-
     input_keys = OrderedDict([
         (
             param.name,
@@ -171,19 +166,17 @@ def create_step(func: typing.Callable,
         for param in params
         if param.annotation is not ParamName
     ])
-    param_names = {
+    input_values = {
         param.name: param_name
         for param in params
         if param.annotation is ParamName
     }
-    if not param_names:
-        param_names = None
 
     return Step(
         func=func,
         input_keys=input_keys,
+        input_values=input_values,
         output_key=get_key(provided_type, param_name, parameterized_types),
-        param_names=param_names,
         is_context_manager=is_context_manager(provided_type)
     )
 
