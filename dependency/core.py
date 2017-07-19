@@ -8,9 +8,7 @@ ParamName = typing.NewType('ParamName', str)
 Step = typing.NamedTuple('Step', [
     ('func', typing.Callable),
     ('input_keys', typing.Dict[str, str]),
-    ('input_types', typing.Dict[str, type]),
     ('output_key', str),
-    ('output_type', type),
     ('param_names', typing.Optional[typing.Dict[str, str]]),
     ('is_context_manager', bool)
 ])
@@ -184,9 +182,7 @@ def create_step(func: typing.Callable,
     return Step(
         func=func,
         input_keys=input_keys,
-        input_types={param.name: param.annotation for param in params},
         output_key=get_key(provided_type, param_name, parameterized_types),
-        output_type=provided_type,
         param_names=param_names,
         is_context_manager=is_context_manager(provided_type)
     )
