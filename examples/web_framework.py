@@ -6,7 +6,7 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.routing import Map, Rule
 from werkzeug.serving import run_simple
 from werkzeug.urls import url_decode
-from werkzeug.wrappers import Request, Response
+from werkzeug.wrappers import Request
 
 
 # Initial state
@@ -65,16 +65,17 @@ def get_url_arg(name: dependency.ParamName, args: URLArgs) -> URLArg:
 
 class App():
     def __init__(self, urls):
-        self.map = Map([
+        rules = [
             Rule(key, endpoint=value)
             for key, value in urls.items()
-        ])
+        ]
+        self.map = Map(rules)
         self.injected_funcs = {}
         dependency.set_required_state({
             'environ': Environ,
             'url_args': URLArgs
         })
-        for rule in urls:
+        for rule in rules:
             self.injected_funcs[rule.endpoint] = dependency.inject(rule.endpoint)
 
     def __call__(self, environ, start_response):
@@ -89,7 +90,7 @@ class App():
         return response(environ, start_response)
 
     def run(self, hostname='localhost', port=8080):
-        run_simple(hostname, port, app)
+        run_simple(hostname, port, self)
 
 
 # Example:
